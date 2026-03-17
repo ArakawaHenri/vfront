@@ -1,0 +1,134 @@
+[project]
+name = "vfront"
+version = "0.1.0"
+description = "OpenAI-compatible frontend for vLLM"
+readme = "README.md"
+authors = [{ name = "Henri", email = "henri-zhang@outlook.com" }]
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.135.1",
+    "granian>=2.7.2",
+    "fastapiex-di>=2.1.2",
+    "fastapiex-settings>=0.0.5",
+    "loguru>=0.7.3",
+    "pydantic>=2.12.5",
+    "vllm>=0.17.0,<0.18.0",
+    "uvloop>=0.4.0; platform_system != 'Windows'",
+    "winloop>=0.5.0; platform_system == 'Windows'",
+    "lmdb>=1.8.1",
+    "zlmdb>=25.12.3",
+    "cbor2>=5.8.0",
+    "mcp>=1.26.0",
+    "httpx>=0.28.1",
+]
+
+[project.scripts]
+vfront = "vfront.cli:main"
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28.1",
+    "mypy>=1.19.1",
+    "ruff>=0.15.6",
+    "pre-commit>=4.5.1",
+]
+
+[tool.uv]
+package = true
+
+[tool.uv.build-backend]
+module-name = "vfront"
+module-root = ""
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "N",   # pep8-naming
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+    "SIM", # flake8-simplify
+    "TCH", # flake8-type-checking
+    "RUF", # ruff-specific
+]
+ignore = [
+    "E501",   # line too long (handled by formatter)
+    "B008",   # function call in default argument (FastAPI Depends pattern)
+    "N818",   # exception name should end in Error
+    "TC001",  # move import into TYPE_CHECKING (can break Pydantic runtime)
+    "TC002",  # move import into TYPE_CHECKING (can break Pydantic runtime)
+    "TC003",  # move import into TYPE_CHECKING (can break Pydantic runtime)
+    "RUF002", # ambiguous unicode characters in docstrings (intentional)
+    "RUF023", # __slots__ on Pydantic models
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["vfront"]
+
+[tool.mypy]
+python_version = "3.12"
+warn_return_any = false
+warn_unused_configs = true
+check_untyped_defs = true
+disallow_untyped_defs = false
+disallow_incomplete_defs = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+plugins = ["pydantic.mypy"]
+
+[[tool.mypy.overrides]]
+module = [
+    "vllm.*",
+    "lmdb.*",
+    "zlmdb.*",
+    "cbor2.*",
+    "granian.*",
+    "fastapiex.*",
+    "mcp.*",
+    "uvloop.*",
+]
+ignore_missing_imports = true
+
+# vLLM interaction layer — type stubs incomplete
+[[tool.mypy.overrides]]
+module = ["vfront.engine.service.local", "vfront.engine.service.tokenizer"]
+disable_error_code = ["arg-type", "return-value", "attr-defined"]
+
+# DI injection false positives (Inject() returns Depends, not service)
+[[tool.mypy.overrides]]
+module = "vfront.frontend.api.v1.*"
+disable_error_code = [
+    "assignment",
+    "arg-type",
+    "attr-defined",
+    "index",
+    "union-attr",
+    "no-untyped-def",
+    "list-item",
+]
+
+# MCP executor + adapter: vLLM ToolCall stubs incomplete
+[[tool.mypy.overrides]]
+module = [
+    "vfront.frontend.service.mcp.executor",
+    "vfront.adapter.response",
+    "vfront.adapter.response_streaming",
+    "vfront.adapter.streaming",
+]
+disable_error_code = ["arg-type", "index", "attr-defined"]
+
+# Factory: Starlette exception handler type signatures
+[[tool.mypy.overrides]]
+module = "vfront.frontend.factory"
+disable_error_code = ["arg-type"]
+
+[build-system]
+requires = ["uv_build>=0.10.10,<0.11.0"]
+build-backend = "uv_build"

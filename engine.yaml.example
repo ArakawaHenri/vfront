@@ -1,0 +1,71 @@
+engine:
+    server:
+        host: 0.0.0.0
+        port: 9001
+        # Set this to a local socket path to prefer UDS over host/port.
+        uds: ~
+        workers: 1
+        backlog: 1024
+        workers_kill_timeout: 30
+        log_access: false
+
+    app:
+        title: vfront
+        version: 0.1.0
+        description: Dedicated vLLM engine worker
+        debug_mode: false
+        log_dir: ./logs
+        cors_origins: []
+        api_key: ~
+
+    api:
+        api_key: internal-worker-key
+        log_access: false
+
+    runtime:
+        # null: enable only when native FIM is configured
+        # true: prefer native FIM, otherwise require a configured fallback
+        # false: disable suffix/FIM completions entirely
+        fim: ~
+        models:
+            - id: qwen-base
+              weights: Qwen/Qwen2.5-7B-Instruct
+              tokenizer: ~
+              max_model_len: 32768
+              capabilities: [text]
+              tool_parser: ~
+              reasoning_parser: ~
+              reasoning:
+                  effort_map:
+                      ~: {enable_thinking: true}
+                      none: {enable_thinking: false}
+                      minimal: {enable_thinking: true}
+                      low: {enable_thinking: true}
+                      medium: {enable_thinking: true}
+                      high: {enable_thinking: true}
+                      xhigh: {enable_thinking: true}
+              tensor_parallel_size: 1
+              pipeline_parallel_size: 1
+              dtype: auto
+              gpu_memory_utilization: 0.85
+              enforce_eager: false
+              trust_remote_code: false
+              quantization: ~
+              # Example fallback for non-native FIM models:
+              # infill:
+              #     fallback:
+              #         strategy: chat_tagged
+              #         open_tag: "<INFILL>"
+              #         close_tag: "</INFILL>"
+
+    adapters:
+        enabled: false
+        modules: []
+        # Example:
+        # modules:
+        #     - id: sql
+        #       path: /models/lora/qwen-sql
+        #       runtime_model: qwen-base
+        max_rank: 16
+        max_loras: 1
+        max_cpu_loras: ~

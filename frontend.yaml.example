@@ -1,0 +1,84 @@
+frontend:
+    server:
+        host: 0.0.0.0
+        port: 8000
+        uds: ~
+        workers: 4
+        backlog: 1024
+        workers_kill_timeout: 30
+        log_access: false
+
+    app:
+        title: vfront
+        version: 0.1.0
+        description: OpenAI-compatible frontend for vLLM
+        debug_mode: false
+        log_dir: ./logs
+        cors_origins: []
+        api_key: ~
+
+    routing:
+        transport: remote
+        models:
+            - name: qwen-7b
+              backend: qwen-prod
+              runtime_model: qwen-base
+              capabilities: [text]
+              tool_parser: ~
+            - name: mistral-7b
+              backend: mistral-prod
+              runtime_model: mistral-base
+              capabilities: [text]
+              tool_parser: ~
+            # Example public LoRA route:
+            # - name: qwen-7b-sql
+            #   backend: qwen-prod
+            #   runtime_model: qwen-base
+            #   adapter: sql
+            #   capabilities: [text]
+            #   tool_parser: ~
+        # Frontend routing only declares the public model catalog and backend map.
+        # Context limits and other runtime facts are sourced from engine health.
+        backends:
+            - id: qwen-prod
+              base_url: http://10.0.0.11:9001
+              api_key: internal-worker-key
+              timeout_seconds: 300
+            - id: mistral-prod
+              # UDS is also allowed here, for example:
+              # base_url: unix:///srv/vfront/mistral-7b.sock
+              base_url: http://10.0.0.12:9001
+              api_key: internal-worker-key
+              timeout_seconds: 300
+        batch_concurrency: 64
+
+    store:
+        path: ./data/store.lmdb
+        map_size_mb: 512
+        max_dbs: 64
+        sync: true
+        metasync: true
+        writemap: true
+        map_async: false
+        cleanup_interval_seconds: 60
+        default_retention_minutes: 1440
+
+    file_storage:
+        base_dir: ./data/files
+        max_file_size_mb: 200
+        retention_days: 30
+        cleanup_interval_seconds: 300
+
+    jobs:
+        enabled: true
+        run_embedded: false
+        poll_interval_seconds: 0.1
+        lease_seconds: 300
+        max_parallel_jobs: 8
+        runner_id: ~
+
+    mcp:
+        enabled: false
+        servers: []
+        max_tool_rounds: 10
+        timeout_seconds: 30

@@ -1,0 +1,110 @@
+frontend:
+    server:
+        host: 0.0.0.0
+        port: 8000
+        uds: ~
+        # local transport keeps vLLM in-process, so workers must stay at 1.
+        # managed transport can raise this independently.
+        workers: 1
+        backlog: 1024
+        workers_kill_timeout: 30
+        log_access: false
+
+    app:
+        title: vfront
+        version: 0.1.0
+        description: OpenAI-compatible frontend for vLLM
+        debug_mode: false
+        log_dir: ./logs
+        cors_origins: []
+        api_key: ~
+
+    routing:
+        # local: in-process vLLM, single frontend worker only
+        # managed: spawn local engine workers over UDS
+        # remote: route to external engine workers
+        transport: local
+        batch_concurrency: 64
+        models:
+            - name: qwen-7b
+              backend: qwen-prod
+              runtime_model: qwen-base
+              capabilities: [text]
+              tool_parser: ~
+        backends: []
+
+    store:
+        path: ./data/store.lmdb
+        map_size_mb: 512
+        max_dbs: 64
+        sync: true
+        metasync: true
+        writemap: true
+        map_async: false
+        cleanup_interval_seconds: 60
+        default_retention_minutes: 1440
+
+    file_storage:
+        base_dir: ./data/files
+        max_file_size_mb: 200
+        retention_days: 30
+        cleanup_interval_seconds: 300
+
+    jobs:
+        enabled: true
+        run_embedded: true
+        poll_interval_seconds: 0.1
+        lease_seconds: 300
+        max_parallel_jobs: 8
+        runner_id: ~
+
+    mcp:
+        enabled: false
+        servers: []
+        max_tool_rounds: 10
+        timeout_seconds: 30
+
+engine:
+    managed_workers:
+        api_key: ~
+        socket_dir: /tmp/vfront
+        timeout_seconds: 300
+        startup_timeout_seconds: 60
+        shutdown_timeout_seconds: 10
+
+    api:
+        api_key: ~
+        log_access: false
+
+    runtime:
+        # null: enable only when native FIM is configured
+        # true: prefer native FIM, otherwise require a configured fallback
+        # false: disable suffix/FIM completions entirely
+        fim: ~
+        models:
+            - id: qwen-base
+              weights: Qwen/Qwen2.5-7B-Instruct
+              tokenizer: ~
+              max_model_len: 32768
+              capabilities: [text]
+              tool_parser: ~
+              reasoning_parser: ~
+              tensor_parallel_size: 1
+              pipeline_parallel_size: 1
+              dtype: auto
+              gpu_memory_utilization: 0.9
+              enforce_eager: false
+              trust_remote_code: false
+              quantization: ~
+              # infill:
+              #     fallback:
+              #         strategy: chat_tagged
+              #         open_tag: "<INFILL>"
+              #         close_tag: "</INFILL>"
+
+    adapters:
+        enabled: false
+        modules: []
+        max_rank: 16
+        max_loras: 1
+        max_cpu_loras: ~
